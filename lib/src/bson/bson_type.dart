@@ -1,3 +1,4 @@
+part of bson;
 class _ElementPair{
   String name;
   var value;
@@ -82,9 +83,11 @@ BsonObject bsonObjectFromTypeByte(int typeByte){
     case BSON.BSON_DATA_OBJECT:
       return new BsonMap({});
     case BSON.BSON_DATA_OID:
-      return new BsonObjectId();
+      return new ObjectId();
     case BSON.BSON_DATA_NULL:
       return new BsonNull();
+    case BSON.BSON_DATA_DBPOINTER:
+      return new DbRef(null,null);      
     case BSON.BSON_DATA_BOOLEAN:
       return new BsonBoolean(false);
     case BSON.BSON_DATA_BINARY:

@@ -1,3 +1,4 @@
+part of bson;
 class BSON {
 
   static const BSON_INT32_MAX = 0x7FFFFFFF;
@@ -74,6 +75,13 @@ class BSON {
    * @classconstant BSON_DATA_REGEXP
    **/
   static const BSON_DATA_REGEXP = 11;
+  /**
+   * Code BSON Type
+   *  
+   * @classconstant BSON_DATA_DBPOINTER
+   **/
+  static const BSON_DATA_DBPOINTER = 12;
+  
   /**
    * Code BSON Type
    *  

@@ -1,3 +1,4 @@
+part of mongo_dart;
 class Connection{
   Map<int,Completer<MongoReplyMessage>> replyCompleters;
   Binary lengthBuffer;
@@ -49,7 +50,7 @@ class Connection{
         debug(message.toString());
         //print(message.toString());
         bufferToSend = message.serialize();
-        debug(bufferToSend.toHexString());
+        debug(bufferToSend.hexString);
       } else {
         bufferToSend = null;  
       } 

@@ -1,11 +1,12 @@
-#library("Database_tests");
-#import("package:mongo_dart/mongo.dart");
-#import("dart:uri");
-#import("package:mongo_dart/bson.dart");
-#import("package:mongo_dart/bson_vm.dart");
-#import("dart:io");
-#import("dart:crypto");
-#import('package:unittest/unittest.dart');
+library database_tests;
+import 'package:mongo_dart/mongo_dart.dart';
+import 'dart:uri';
+import 'package:mongo_dart/bson.dart';
+import 'package:mongo_dart/bson_vm.dart';
+import 'dart:io';
+import 'dart:crypto';
+import 'package:unittest/unittest.dart';
+
 const DefaultUri = 'mongodb://127.0.0.1/';
 testSelectorBuilderCreation(){
   SelectorBuilder selector = query();
@@ -453,15 +454,15 @@ testAuthComponents(){
   var digest;
   hash = new MD5();
   hash.update(''.charCodes());
-  digest = new Binary.from(hash.digest()).toHexString();
+  digest = new Binary.from(hash.digest()).hexString;
   expect(digest,'d41d8cd98f00b204e9800998ecf8427e');
   hash = new MD5();
   hash.update('md4'.charCodes());
-  digest = new Binary.from(hash.digest()).toHexString();
+  digest = new Binary.from(hash.digest()).hexString;
   expect(digest,'c93d3bf7a7c4afe94b64e30c2ce39f4f');
   hash = new MD5();
   hash.update('md5'.charCodes());
-  digest = new Binary.from(hash.digest()).toHexString();
+  digest = new Binary.from(hash.digest()).hexString;
   expect(digest,'1bc29b36f623ba82aaf6724fd3b16718');
   var nonce = '94505e7196beb570';
   var userName = 'dart';
@@ -469,10 +470,10 @@ testAuthComponents(){
   var test_key = 'aea09fb38775830306c5ff6de964ff04';
   var md5 = new MD5();
   md5.update("${userName}:mongo:${password}".charCodes());
-  var hashed_password = new Binary.from(md5.digest()).toHexString();
+  var hashed_password = new Binary.from(md5.digest()).hexString;
   md5 = new MD5();
   md5.update("${nonce}${userName}${hashed_password}".charCodes());
-  var key = new Binary.from(md5.digest()).toHexString();
+  var key = new Binary.from(md5.digest()).hexString;
   expect(key,test_key);
 }
 
