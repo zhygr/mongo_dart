@@ -3,28 +3,23 @@ class Db{
   String databaseName;
   ServerConfig serverConfig;
   Connection connection;
-  validateDatabaseName(String dbName) {
-    if(dbName.length === 0) throw "database name cannot be the empty string";  
+  _validateDatabaseName(String dbName) {
+    if(dbName.length == 0) throw "database name cannot be the empty string";
     var invalidChars = [" ", ".", "\$", "/", "\\"];
     for(var i = 0; i < invalidChars.length; i++) {
       if(dbName.indexOf(invalidChars[i]) != -1) throw new Exception("database names cannot contain the character '${invalidChars[i]}'");
     }
-  }    
-  Db.local(this.databaseName){
-     if (serverConfig === null) {
-      serverConfig = new ServerConfig();
-     }
-    connection = new Connection(serverConfig);
   }
 
-/**  
-* Db constructor expects [valid mongodb URI] (http://www.mongodb.org/display/DOCS/Connections). 
-* For example next code points to local mongodb server on default mongodb port, database *testdb*   
+/**
+* Db constructor expects [valid mongodb URI] (http://www.mongodb.org/display/DOCS/Connections).
+* For example next code points to local mongodb server on default mongodb port, database *testdb*
 *     var db = new Db('mongodb://127.0.0.1/testdb');
 * And that code direct to MongoLab server on 37637 port, database *testdb*, username *dart*, password *test*
 *     var db = new Db('mongodb://dart:test@ds037637-a.mongolab.com:37637/objectory_blog');
 */
   Db(String uriString){
+    _configureConsoleLogger();
     var uri = new Uri.fromString(uriString);
     if (uri.scheme != 'mongodb') {
       throw 'Invalid scheme in uri: $uriString ${uri.scheme}';
@@ -51,13 +46,13 @@ class Db{
   DbCollection collection(String collectionName){
       return new DbCollection(this,collectionName);
   }
-  Future<MongoReplyMessage> executeQueryMessage(MongoMessage queryMessage){
+  Future queryMessage(MongoMessage queryMessage){
     return connection.query(queryMessage);
-  }  
+  }
   executeMessage(MongoMessage message){
     connection.execute(message);
   }
-  Future<bool> open(){
+  Future open(){
     Completer completer = new Completer();
     initBsonPlatform();
     if (connection.connected){
@@ -65,7 +60,7 @@ class Db{
       connection = new Connection(serverConfig);
     }
     connection.connect().then((v) {
-      if (serverConfig.userName === null) {
+      if (serverConfig.userName == null) {
         completer.complete(v);
       }
       else {
@@ -76,34 +71,25 @@ class Db{
     });
     return completer.future;
   }
-  Future<Map> executeDbCommand(MongoMessage message){
+  Future executeDbCommand(MongoMessage message){
       Completer<Map> result = new Completer();
-      //print("executeDbCommand.message = ${message}");
       connection.query(message).then((replyMessage){
-        //print("replyMessage = ${replyMessage}");
-        //print("replyMessage.documents = ${replyMessage.documents}");
-        
         String errMsg;
         if (replyMessage.documents.length == 0) {
           errMsg = "Error executing Db command, Document length 0 $replyMessage";
           print("Error: $errMsg");
           var m = new Map();
           m["errmsg"]=errMsg;
-          result.complete(m);
-        } else  if (replyMessage.documents[0]["ok"] == 1.0){
+          result.completeException(m);
+        } else  if (replyMessage.documents[0]['ok'] == 1.0 && replyMessage.documents[0]['err'] == null){
           result.complete(replyMessage.documents[0]);
         } else {
-          errMsg = "Error executing Db command";
-          if (replyMessage.documents[0].containsKey("errmsg")){
-            errMsg = replyMessage.documents[0]["errmsg"];
-          }
-          print("Error: $errMsg");
-          result.complete(replyMessage.documents[0]);
-        }         
+          result.completeException(replyMessage.documents[0]);
+        }
       });
-    return result.future;        
+    return result.future;
   }
-  Future<bool> dropCollection(String collectionName){
+  Future dropCollection(String collectionName){
     Completer completer = new Completer();
     collectionsInfoCursor(collectionName).toList().then((v){
       if (v.length == 1){
@@ -111,28 +97,25 @@ class Db{
           .then((res)=>completer.complete(res));
         } else{
           completer.complete(true);
-        }  
-    });    
-    return completer.future;    
+        }
+    });
+    return completer.future;
   }
 /**
 *   Drop current database
 */
-  Future<Map> drop(){
-    Completer completer = new Completer();
-    executeDbCommand(DbCommand.createDropDatabaseCommand(this))
-      .then((res)=>completer.complete(res));
-    return completer.future;    
+  Future drop(){
+    return executeDbCommand(DbCommand.createDropDatabaseCommand(this));
   }
-  
-  removeFromCollection(String collectionName, [Map selector = const {}]){
-    connection.execute(new MongoRemoveMessage("$databaseName.$collectionName", selector));    
-  }    
-  
-  Future<Map> getLastError(){    
+
+  Future removeFromCollection(String collectionName, [Map selector = const {}]){
+    return connection.query(new MongoRemoveMessage("$databaseName.$collectionName", selector));
+  }
+
+  Future<Map> getLastError(){
     return executeDbCommand(DbCommand.createGetLastErrorCommand(this));
   }
-  Future<Map> getNonce(){    
+  Future<Map> getNonce(){
     return executeDbCommand(DbCommand.createGetNonceCommand(this));
   }
 
@@ -143,15 +126,15 @@ class Db{
 //    print("closing db");
     connection.close();
   }
-  
+
   Cursor collectionsInfoCursor([String collectionName]) {
     Map selector = {};
     // If we are limiting the access to a specific collection name
-    if(collectionName !== null){
+    if(collectionName != null){
       selector["name"] = "${this.databaseName}.$collectionName";
-    }  
+    }
     // Return Cursor
-      return new Cursor(this, new DbCollection(this, DbCommand.SYSTEM_NAMESPACE_COLLECTION), selector);      
+      return new Cursor(this, new DbCollection(this, DbCommand.SYSTEM_NAMESPACE_COLLECTION), selector);
   }
 
   Future<bool> authenticate(String userName, String password){
@@ -165,4 +148,80 @@ class Db{
     then((res)=>completer.complete(res["ok"] == 1));
     return completer.future;
   }
+  Future<List> indexInformation([String collectionName]) {
+    var selector = {};
+    if (collectionName != null) {
+      selector['ns'] = '$databaseName.$collectionName';
+    }
+    return new Cursor(this, new DbCollection(this, DbCommand.SYSTEM_INDEX_COLLECTION), selector).toList();
+  }
+  String _createIndexName(Map keys) {
+    var name = '';
+    keys.forEach((key,value) {
+      name = '${name}_${key}_$value';
+    });
+    return name;
+  }
+  Future createIndex(String collectionName, {String key, Map keys, bool unique, bool sparse, bool background, bool dropDups, String name}) {
+    var selector = {};
+    selector['ns'] = '$databaseName.$collectionName';
+    keys = _setKeys(key, keys);
+    selector['key'] = keys;
+    for (final order in keys.values) {
+      if (order != 1 && order != -1) {
+        throw new ArgumentError('Keys may contain only 1 or -1');
+      }
+    }
+    if (unique == true) {
+      selector['unique'] = true;
+    } else {
+      selector['unique'] = false;
+    }
+    if (sparse == true) {
+      selector['sparse'] = true;
+    }
+    if (background == true) {
+      selector['background'] = true;
+    }
+    if (dropDups == true) {
+      selector['dropDups'] = true;
+    }
+    if (name ==  null) {
+      name = _createIndexName(keys);
+    }
+    selector['name'] = name;
+    MongoInsertMessage insertMessage = new MongoInsertMessage('$databaseName.${DbCommand.SYSTEM_INDEX_COLLECTION}',[selector]);
+    executeMessage(insertMessage);
+    return getLastError();
+  }
+
+  Map _setKeys(String key, Map keys) {
+    if (key != null && keys != null) {
+      throw new ArgumentError('Only one parameter must be set: key or keys');
+    }
+    if (key != null) {
+      keys = {'$key': 1};
+    }
+    if (keys == null) {
+      throw new ArgumentError('key or keys parameter must be set');
+    }
+    return keys;
+  }
+  Future ensureIndex(String collectionName, {String key, Map keys, bool unique, bool sparse, bool background, bool dropDups, String name}) {
+    keys = _setKeys(key, keys);
+    var completer = new Completer();
+    indexInformation(collectionName).then((indexInfos) {
+      if (name == null) {
+        name = _createIndexName(keys);
+      }
+      if (indexInfos.some((info) => info['name'] == name)) {
+        completer.complete({'ok': 1.0, 'result': 'index preexists'});
+      } else {
+        return createIndex(collectionName,keys: keys, unique: unique, sparse: sparse, background: background, dropDups: dropDups, name: name);
+      }
+    });
+    return completer.future;
+  }
 }
+
+

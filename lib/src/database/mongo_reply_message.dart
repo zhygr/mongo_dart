@@ -2,11 +2,11 @@ part of mongo_dart;
 class MongoReplyMessage extends MongoMessage{
   BsonCString _collectionFullName;
   int responseFlags;
-  int cursorId =-1; // 64bit integer 
+  int cursorId =-1; // 64bit integer
   int startingFrom;
   int numberReturned = -1;
-  List documents;  
-  deserialize(Binary buffer){
+  List documents;
+  deserialize(BsonBinary buffer){
     readMessageHeaderFrom(buffer);
     responseFlags = buffer.readInt32();
     cursorId = buffer.readInt64();
@@ -22,9 +22,9 @@ class MongoReplyMessage extends MongoMessage{
   String toString(){
     if (documents.length == 1)
     {
-      return "MongoReplpyMessage(ResponceTo:$responseTo, cursorId: $cursorId, numberReturned:$numberReturned, responseFlags:$responseFlags, ${documents[0]})"; 
-    }        
+      return "MongoReplpyMessage(ResponceTo:$responseTo, cursorId: $cursorId, numberReturned:$numberReturned, responseFlags:$responseFlags, ${documents[0]})";
+    }
     return "MongoReplpyMessage(ResponceTo:$responseTo, cursorId: $cursorId, numberReturned:$numberReturned, responseFlags:$responseFlags)";
-  }  
-  
+  }
+
 }

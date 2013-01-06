@@ -9,18 +9,18 @@ class MongoUpdateMessage extends MongoMessage{
   MongoUpdateMessage(String collectionFullName,
             Map selector,
             Map document,
-            this.flags            
-            ){    
+            this.flags
+            ){
     _collectionFullName = new BsonCString(collectionFullName);
     _selector = new BsonMap(selector);
-    _document = new BsonMap(document);    
-    opcode = MongoMessage.Update;    
+    _document = new BsonMap(document);
+    opcode = MongoMessage.Update;
   }
   int get messageLength{
     return 16+4+_collectionFullName.byteLength()+4+_selector.byteLength()+_document.byteLength();
   }
-  Binary serialize(){
-    Binary buffer = new Binary(messageLength);
+  BsonBinary serialize(){
+    BsonBinary buffer = new BsonBinary(messageLength);
     writeMessageHeaderTo(buffer);
     buffer.writeInt(0);
     _collectionFullName.packValue(buffer);

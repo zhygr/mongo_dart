@@ -40,7 +40,7 @@ class JsonUnsupportedObjectError {
 /**
  * Utility class to parse JSON and serialize objects to JSON.
  */
-class JSON {
+class JSON_EXT {
   /**
    * Parses [json] and build the corresponding parsed JSON value.
    *
@@ -162,8 +162,8 @@ class _JsonParser {
   static List<int> tokens;
 
   // Extended
-  static const int DOLLAR_SIGN = 36; 
-  
+  static const int DOLLAR_SIGN = 36;
+
   final String json;
   final int length;
   int position = 0;
@@ -175,7 +175,7 @@ class _JsonParser {
   _JsonParser(String json)
       : json = json,
         length = json.length {
-    if (tokens !== null) return;
+    if (tokens != null) return;
 
     // Use a list as jump-table. It is faster than switch and if.
     tokens = new List<int>(LAST_ASCII + 1);
@@ -208,18 +208,18 @@ class _JsonParser {
 
   parseToplevel() {
     final result = parseValue();
-    if (token() !== null) {
+    if (token() != null) {
       error('Junk at the end of JSON input');
     }
     return result;
   }
 
   parseValue() {
-    final int token = token();
-    if (token === null) {
+    final int tok = token();
+    if (tok == null) {
       error('Nothing to parse');
     }
-    switch (token) {
+    switch (tok) {
       case STRING_LITERAL: return parseString();
       case NUMBER_LITERAL: return parseNumber();
       case NULL_LITERAL: return expectKeyword(NULL_STRING, null);
@@ -227,9 +227,9 @@ class _JsonParser {
       case TRUE_LITERAL: return expectKeyword(TRUE_STRING, true);
       case LBRACE: return parseObject();
       case LBRACKET: return parseList();
-
       default:
         error('Unexpected token');
+        return;
     }
   }
 
@@ -242,7 +242,7 @@ class _JsonParser {
     return value;
   }
   parseBsonExtensionValue(String key) {
-    if (key == '\$date') {        
+    if (key == '\$date') {
       return new Date.fromMillisecondsSinceEpoch(parseNumber());
     }
     if (key == '\$oid') {
@@ -254,7 +254,7 @@ class _JsonParser {
       var oidKey = parseString();
       if (oidKey != '\$oid' || !isToken(COLON)) error("Expected '\$oid:' when parsing DbRef");
       position++;
-      var hex = parseString();      
+      var hex = parseString();
       return new DbRef(collection,new ObjectId.fromHexString(hex));
     }
     if (key == '\$regex') {
@@ -263,12 +263,12 @@ class _JsonParser {
       var optkey = parseString();
       if (optkey != '\$options' || !isToken(COLON)) error("Expected '\$options:' when parsing BsonRegexp");
       position++;
-      var options = parseString();      
+      var options = parseString();
       return new BsonRegexp(pattern,options: options);
     }
-    
+
   }
-  
+
   parseObject() {
     var object = {};
 
@@ -284,13 +284,13 @@ class _JsonParser {
           if (extObject != null) {
             object = extObject;
             break;
-          }            
+          }
         }
         object[key] = parseValue();
         if (!isToken(COMMA)) break;
-        position++;  // Skip ','.                  
+        position++;  // Skip ','.
       };
-      
+
       if (!isToken(RBRACE)) error("Expected '}' at end of object");
     }
     position++;
@@ -375,6 +375,7 @@ class _JsonParser {
             break;
           default:
             error('Invalid esacape sequence in string literal');
+            break;
         }
       }
       charCodes.add(c);
@@ -388,36 +389,36 @@ class _JsonParser {
     if (!isToken(NUMBER_LITERAL)) error('Expected number literal');
 
     final int startPos = position;
-    int char = char();
-    if (char === MINUS) char = nextChar();
-    if (char === CHAR_0) {
-      char = nextChar();
-    } else if (isDigit(char)) {
-      char = nextChar();
-      while (isDigit(char)) char = nextChar();
+    int chr = char();
+    if (chr == MINUS) chr = nextChar();
+    if (chr == CHAR_0) {
+      chr = nextChar();
+    } else if (isDigit(chr)) {
+      chr = nextChar();
+      while (isDigit(chr)) chr = nextChar();
     } else {
       error('Expected digit when parsing number');
     }
 
     bool isInt = true;
-    if (char === DOT) {
-      char = nextChar();
-      if (isDigit(char)) {
-        char = nextChar();
+    if (chr == DOT) {
+      chr = nextChar();
+      if (isDigit(chr)) {
+        chr = nextChar();
         isInt = false;
-        while (isDigit(char)) char = nextChar();
+        while (isDigit(chr)) chr = nextChar();
       } else {
         error('Expected digit following comma');
       }
     }
 
-    if (char === CHAR_E || char === CHAR_CAPITAL_E) {
-      char = nextChar();
-      if (char === MINUS || char === PLUS) char = nextChar();
-      if (isDigit(char)) {
-        char = nextChar();
+    if (chr == CHAR_E || chr == CHAR_CAPITAL_E) {
+      chr = nextChar();
+      if (chr == MINUS || chr == PLUS) chr = nextChar();
+      if (isDigit(chr)) {
+        chr = nextChar();
         isInt = false;
-        while (isDigit(char)) char = nextChar();
+        while (isDigit(chr)) chr = nextChar();
       } else {
         error('Expected digit following \'e\' or \'E\'');
       }
@@ -460,11 +461,11 @@ class _JsonParser {
       if (position >= length) return null;
       int char = json.charCodeAt(position);
       int token = tokens[char];
-      if (token === WHITESPACE) {
+      if (token == WHITESPACE) {
         position++;
         continue;
       }
-      if (token === null) return 0;
+      if (token == null) return 0;
       return token;
     }
   }
@@ -547,7 +548,7 @@ class _JsonStringifier {
   void checkCycle(final object) {
     // TODO: use Iterables.
     for (int i = 0; i < seen.length; i++) {
-      if (seen[i] === object) {
+      if (seen[i] == object) {
         throw 'Cyclic structure';
       }
     }
@@ -583,13 +584,13 @@ class _JsonStringifier {
       // TODO: use writeOn.
       sb.add(numberToString(object));
       return true;
-    } else if (object === true) {
+    } else if (object == true) {
       sb.add('true');
       return true;
-    } else if (object === false) {
+    } else if (object == false) {
       sb.add('false');
        return true;
-    } else if (object === null) {
+    } else if (object == null) {
       sb.add('null');
       return true;
     } else if (object is String) {
@@ -601,13 +602,13 @@ class _JsonStringifier {
       return stringifyJsonValue({'\$date': (object as Date).millisecondsSinceEpoch});
     }
     else if (object is ObjectId) {
-        return stringifyJsonValue({'\$oid': object.toHexString()});        
+        return stringifyJsonValue({'\$oid': object.toHexString()});
     }
     else if (object is DbRef) {
-      return stringifyJsonValue({'\$ref': object.collection,'\$oid': object.id.toHexString()});        
+      return stringifyJsonValue({'\$ref': object.collection,'\$oid': object.id.toHexString()});
     }
     else if (object is BsonRegexp) {
-      return stringifyJsonValue({'\$regex': object.pattern,'\$options': object.options});        
+      return stringifyJsonValue({'\$regex': object.pattern,'\$options': object.options});
     }
     else if (object is List) {
       checkCycle(object);
@@ -646,5 +647,5 @@ class _JsonStringifier {
     } else {
       return false;
     }
-  }    
+  }
 }

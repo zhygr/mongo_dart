@@ -4,32 +4,32 @@ class _ElementPair{
   var value;
   _ElementPair([this.name,this.value]);
 }
-class BsonObject {  
-  int get typeByte{ throw const Exception("must be implemented");}
+class BsonObject {
+  int get typeByte{ throw "must be implemented";}
   int byteLength() => 0;
   packElement(String name, var buffer){
     buffer.writeByte(typeByte);
-    if (name !== null){
+    if (name != null){
       new BsonCString(name).packValue(buffer);
     }
     packValue(buffer);
-  } 
-  packValue(var buffer){ throw const Exception("must be implemented");}
+  }
+  packValue(var buffer){ throw "must be implemented";}
   _ElementPair unpackElement(buffer){
     _ElementPair result = new _ElementPair();
-    result.name = buffer.readCString();    
+    result.name = buffer.readCString();
     unpackValue(buffer);
     result.value = value;
     return result;
   }
-  unpackValue(var buffer){ throw const Exception("must be implemented");}
+  unpackValue(var buffer){ throw "must be implemented";}
   get value=>null;
 }
 int elementSize(String name, value) {
   int size = 1;
-  if (name !== null){
+  if (name != null){
     size += Statics.getKeyUtf8(name).length + 1;
-  } 
+  }
   size += bsonObjectFrom(value).byteLength();
   return size;
 }
@@ -39,34 +39,34 @@ BsonObject bsonObjectFrom(var value){
   }
   if (value is int){
     return new BsonInt(value);
-  }    
+  }
   if (value is num){
     return new BsonDouble(value);
-  } 
+  }
 
   if (value is String){
     return new BsonString(value);
-  }        
+  }
   if (value is Map){
     return new BsonMap(value);
-  }        
+  }
   if (value is List){
     return new BsonArray(value);
-  }        
-  if (value === null){
+  }
+  if (value == null){
     return new BsonNull();
   }
   if (value is Date){
     return new BsonDate(value);
-  }  
-  if (value === true || value === false){
+  }
+  if (value == true || value == false){
     return new BsonBoolean(value);
   }
   if (value is BsonRegexp){
     return value;
-  }  
-  throw new Exception("Not implemented for $value");           
-}  
+  }
+  throw new Exception("Not implemented for $value");
+}
 
 BsonObject bsonObjectFromTypeByte(int typeByte){
   switch(typeByte){
@@ -87,19 +87,19 @@ BsonObject bsonObjectFromTypeByte(int typeByte){
     case BSON.BSON_DATA_NULL:
       return new BsonNull();
     case BSON.BSON_DATA_DBPOINTER:
-      return new DbRef(null,null);      
+      return new DbRef(null,null);
     case BSON.BSON_DATA_BOOLEAN:
       return new BsonBoolean(false);
     case BSON.BSON_DATA_BINARY:
-      return new Binary(0);
+      return new BsonBinary(0);
     case BSON.BSON_DATA_DATE:
       return new BsonDate(null);
     case BSON.BSON_DATA_CODE:
       return new BsonCode(null);
     case BSON.BSON_DATA_REGEXP:
-      return new BsonRegexp(null);      
+      return new BsonRegexp(null);
     default:
-      throw new Exception("Not implemented for BSON TYPE $typeByte");           
-  }  
+      throw new Exception("Not implemented for BSON TYPE $typeByte");
+  }
 }
 
